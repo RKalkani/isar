@@ -1,0 +1,13 @@
+Source: linux
+Section: kernel
+Priority: extra
+Maintainer: Baurzhan Ismagulov <ibr@radix50.net>
+Build-Depends: bc, kmod, cpio, debhelper (>= 9)
+Standards-Version: 3.9.5
+Homepage: http://www.kernel.org/
+
+Package: linux
+Priority: required
+Architecture: any
+Description: linux kernel image
+ This package contains linux kernel image.

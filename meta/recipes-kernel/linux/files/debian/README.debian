@@ -1,0 +1,30 @@
+# Generating a Debian package
+
+The `debian` directory contains all the files necessary to build a Debian package using `debhelper`, here
+are some information about how to handle them whenever updating the `linux` version.
+
+Once those files have been modified to suit your needs, generate a package using the following command:
+dpkg-buildpackage -us -uc
+
+Note that the standard followed is described in the following document (v1.2.37):
+https://www.debian.org/doc/manuals/maint-guide/index.en.html
+
+# The `rules` file
+
+The default configuration that will be used when building the kernel is in the following format:
+${HOST_ARCH}_defconfig
+
+In order to change this behaviour, set the `CONFIG` variable in the `rules` file to the name of the
+configuration file you want used by default.
+
+# The `control` file
+
+This file can be generated using the `control.in` template, in order to automatically use the proper
+kernel version and host architecture:
+./debian/rules gencontrol
+
+# The `changelog` file
+
+When migrating to a newer version of `linux`, the `changelog` file has to be updated to indicate a new version
+of the package. You can use the following command to automatically format the file:
+dch -i

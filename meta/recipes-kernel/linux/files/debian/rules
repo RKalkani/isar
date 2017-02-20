@@ -1,0 +1,115 @@
+#!/usr/bin/make -f
+
+include /usr/share/dpkg/architecture.mk
+
+# default config file
+CONFIG = isar_defconfig
+
+KVERSION := $(shell $(MAKE) kernelversion)
+builddir := build-$(KVERSION)
+NB_PROCS := $(shell nproc --all || echo 1)
+
+# x86 big zImage
+BZIMAGE := $(builddir)/arch/$(DEB_BUILD_ARCH_CPU)/boot/bzImage
+ZIMAGE := $(builddir)/arch/$(DEB_BUILD_ARCH_CPU)/boot/zImage
+SYSTEM_MAP := $(builddir)/System.map
+
+pwd := $(shell pwd)
+pkg := linux
+dir := $(pwd)/debian/$(pkg)
+srcpkg := $(pkg)-source
+srcdir := $(pwd)/debian/$(srcpkg)
+
+configure: configure-stamp
+configure-stamp:
+	dh_testdir
+	mkdir -p $(builddir)
+	$(MAKE) O=$(builddir) $(CONFIG)
+
+gencontrol: debian/control.in
+	sed                                        \
+		-e 's,@BINPKG@,$(pkg),g'           \
+		-e 's,@ARCH@,$(DEB_BUILD_ARCH_CPU),g'   \
+		-e 's,@KVERSION@,$(KVERSION),g'    \
+		debian/control.in > debian/control
+
+install: install-stamp
+install-stamp: build
+	dh_testdir
+	dh_testroot
+
+	install -d $(dir)/boot
+
+	if [ $(DEB_BUILD_ARCH_CPU) = "i386" ] && [ -f $(BZIMAGE) ]; then                               \
+		install -m 755 $(BZIMAGE) $(dir)/boot/vmlinuz-$(KVERSION)-$(DEB_HOST_ARCH);            \
+	elif [ $(DEB_BUILD_ARCH_CPU) != "i386" ] && [ -f $(ZIMAGE) ]; then                             \
+		install -m 755 $(ZIMAGE) $(dir)/boot/vmlinuz-$(KVERSION)-$(DEB_HOST_ARCH);             \
+	fi
+
+	if [ -f $(SYSTEM_MAP) ]; then                                                                  \
+		install -m 644 $(SYSTEM_MAP) $(dir)/boot/System.map-$(KVERSION)-$(DEB_HOST_ARCH);      \
+	fi
+
+	# install .config
+	install -m 644 $(builddir)/.config $(dir)/boot/config-$(KVERSION)-$(DEB_HOST_ARCH)
+	dh_installdirs -a
+	touch $@
+
+build-indep:
+	@:
+
+build-arch: build-stamp
+build-stamp: configure
+	$(MAKE) ARCH=$(DEB_BUILD_ARCH_CPU)          \
+		CROSS_COMPILE=$(DEB_HOST_GNU_TYPE)- \
+		O=$(builddir) -j $(NB_PROCS)
+	touch $@
+
+build: build-arch
+
+binary-arch: gencontrol install
+	dh_testdir
+	dh_testroot
+
+ifeq ($(INSTALL_DOCS),yes)
+	dh_installchangelogs -a
+endif
+	
+	dh_installdeb -a
+	dh_gencontrol -a
+	dh_md5sums -a
+	dh_builddeb -a
+
+binary-indep: gencontrol
+	dh_testdir -i
+	dh_testroot -i
+
+	install -d $(srcdir)/usr/src/linux-$(KVERSION)/debian
+	tar -c --exclude CVS --exclude debian * | ( cd $(srcdir)/usr/src/linux-$(KVERSION); tar xf - )
+	install -m 755 debian/rules $(srcdir)/usr/src/linux-$(KVERSION)/debian
+	install -m 644 debian/compat $(srcdir)/usr/src/linux-$(KVERSION)/debian
+	install -m 644 debian/control $(srcdir)/usr/src/linux-$(KVERSION)/debian
+	install -m 644 debian/control.in $(srcdir)/usr/src/linux-$(KVERSION)/debian
+	install -m 644 debian/changelog $(srcdir)/usr/src/linux-$(KVERSION)/debian
+
+ifeq ($(INSTALL_DOCS),yes)
+	dh_installchangelogs -i
+endif
+	
+	dh_installdeb -i
+	dh_gencontrol -i
+	dh_md5sums -i
+	dh_builddeb -i
+
+binary: binary-arch
+
+clean:
+	dh_testdir
+	mv debian debian.bak
+	-$(MAKE) mrproper
+	mv debian.bak debian
+
+	rm -f debian/substvars {configure,build,install}-stamp debian/files
+	rm -rf $(dir) $(builddir)
+
+.PHONY: clean build build-indep build-arch binary-arch binary-indep binary gencontrol
