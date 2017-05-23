@@ -202,6 +202,30 @@ Created images are:
 ../build-8/tmp/deploy/images/isar-image-base.rpi-sdimg
 ```
 
+### Generate EFI disk images
+
+Once the image artifacts have been built (c.f. previous section), full EFI disk images can be generated using the `wic` utility.
+Currently, only the `i386` and `amd64` target architectures are supported:
+```
+ # Generate an EFI image for the `i386` target architecture
+ $ wic create -D sdimage-efi -o . -e multiconfig:qemui386:isar-image-base
+ # Similarly, for the `amd64` target architecture
+ $ wic create -D sdimage-efi -o . -e multiconfig:qemuamd64:isar-image-base
+```
+
+In order to run the images with `qemu`, an EFI firmware is required and available at the following address:
+https://github.com/tianocore/edk2/tree/3858b4a1ff09d3243fea8d07bd135478237cb8f7
+
+Note that the `ovmf` package in Debian jessie/stretch/sid contains a pre-compiled firmware, but doesn't seem to be recent
+enough to allow images to be testable under `qemu`.
+
+```
+# AMD64 image
+qemu-system-x86_64 -m 256M -nographic -bios edk2/Build/OvmfX64/RELEASE_*/FV/OVMF_CODE.fd -hda ./sdimage-*
+# i386 image
+qemu-system-i386 -m 256M -nographic -bios edk2/Build/OvmfX32/RELEASE_*/FV/OVMF_CODE.fd -hda ./sdimage-*
+```
+
 ---
 
 ## Terms and Definitions
