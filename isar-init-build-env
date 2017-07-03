@@ -58,3 +58,6 @@ export ISARROOT
 unset ISARROOT
 
 [ -z "$BUILDDIR" ] || cd "$BUILDDIR"
+
+# required to find mkdosfs as unprivileged user
+PATH=/sbin:$PATH
