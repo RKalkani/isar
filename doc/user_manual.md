@@ -52,7 +52,9 @@ The steps below describe how to build the images provided by default.
 Install the following packages:
 ```
 dosfstools
+e2fsprogs/jessie-backports
 git
+grub-efi-amd64-bin
 mtools
 multistrap
 parted
@@ -221,9 +223,9 @@ enough to allow images to be testable under `qemu`.
 
 ```
 # AMD64 image
-qemu-system-x86_64 -m 256M -nographic -bios edk2/Build/OvmfX64/RELEASE_*/FV/OVMF_CODE.fd -hda ./sdimage-*
+qemu-system-x86_64 -m 256M -nographic -bios edk2/Build/OvmfX64/RELEASE_*/FV/OVMF.fd -hda ./sdimage-*
 # i386 image
-qemu-system-i386 -m 256M -nographic -bios edk2/Build/OvmfX32/RELEASE_*/FV/OVMF_CODE.fd -hda ./sdimage-*
+qemu-system-i386 -m 256M -nographic -bios edk2/Build/OvmfX32/RELEASE_*/FV/OVMF.fd -hda ./sdimage-*
 ```
 
 ---
